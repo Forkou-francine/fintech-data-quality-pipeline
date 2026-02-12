@@ -1,8 +1,21 @@
+# Environnement virtuel (trop lourd pour GitHub)
+venv/
+
+# Fichiers Python compilés
 __pycache__/
 *.pyc
+
+# Variables d'environnement (mots de passe, clés API)
 .env
+
+# Données brutes (trop lourdes, et on peut les régénérer)
 data/raw/*.csv
+data/*.duckdb
+
+# Fichiers générés par dbt
 target/
 dbt_packages/
 logs/
+
+# Fichiers Great Expectations temporaires
 great_expectations/uncommitted/
