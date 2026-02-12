@@ -1,0 +1,32 @@
+version: 2
+
+models:
+  - name: stg_transactions
+    description: "Transactions nettoyées depuis la source brute"
+    columns:
+      - name: transaction_id
+        description: "Identifiant unique de la transaction"
+        tests:
+          - unique
+          - not_null
+      - name: amount
+        description: "Montant de la transaction en euros"
+      - name: category
+        tests:
+          - accepted_values:
+              values: ['virement', 'prélèvement', 'carte', 'retrait', 'dépôt']
+      - name: status
+        tests:
+          - accepted_values:
+              values: ['completed', 'pending', 'failed', 'cancelled']
+
+  - name: stg_customers
+    description: "Clients nettoyés"
+    columns:
+      - name: customer_id
+        tests:
+          - unique
+          - not_null
+      - name: email
+        tests:
+          - unique
