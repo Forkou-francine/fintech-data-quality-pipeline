@@ -1,10 +1,63 @@
-version: '3.8'
+
+# Ce bloc définit les paramètres communs à tous les services Airflow
+# Le "&" crée un alias qu'on réutilise avec "<<: *airflow-common"
+x-airflow-common: &airflow-common
+  image: apache/airflow:2.8.1-python3.11
+  environment:
+    # Executor : comment Airflow exécute les tâches
+    # LocalExecutor = simple, suffisant pour un projet perso
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    # Base de données interne d'Airflow (pour stocker son état)
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: sqlite:////opt/airflow/airflow.db
+    AIRFLOW__CORE__FERNET_KEY: ''
+    # Ne pas charger les DAGs d'exemple (ça pollue l'interface)
+    AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+    # Dire à Airflow où chercher nos DAGs
+    AIRFLOW__CORE__DAGS_FOLDER: /opt/airflow/dags
+  volumes:
+    # On "monte" nos dossiers locaux dans le container Docker
+    # Syntaxe : dossier_local:dossier_dans_docker
+    - ./dags:/opt/airflow/dags
+    - ./scripts:/opt/airflow/scripts
+    - ./data:/opt/airflow/data
+    - ./dbt_project:/opt/airflow/dbt_project
+
 services:
-  dev:
-    build: .
-    volumes:
-      - .:/app
-    working_dir: /app
+  # Service 1 : Initialisation (ne tourne qu'une fois)
+  airflow-init:
+    <<: *airflow-common
+    entrypoint: /bin/bash
+    command: >
+      -c "
+        pip install duckdb dbt-duckdb great-expectations pandas faker &&
+        airflow db init &&
+        airflow users create
+          --username admin
+          --password admin
+          --firstname Admin
+          --lastname User
+          --role Admin
+          --email admin@example.com
+      "
+
+  # Service 2 : L'interface web (ce que tu vois dans le navigateur)
+  airflow-webserver:
+    <<: *airflow-common
+    command: >
+      bash -c "
+        pip install duckdb dbt-duckdb great-expectations pandas faker &&
+        airflow webserver --port 8080
+      "
     ports:
-      - "8501:8501"   # Streamlit
-      - "8080:8080"   # Airflow
+      - "8080:8080"       # Accessible sur http://localhost:8080
+    restart: always
+
+  # Service 3 : Le scheduler (celui qui déclenche les tâches)
+  airflow-scheduler:
+    <<: *airflow-common
+    command: >
+      bash -c "
+        pip install duckdb dbt-duckdb great-expectations pandas faker &&
+        airflow scheduler
+      "
+    restart: always

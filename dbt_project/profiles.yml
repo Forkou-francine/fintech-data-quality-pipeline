@@ -1,0 +1,6 @@
+dbt_project:
+  outputs:
+    dev:
+      type: duckdb
+      path: /opt/airflow/data/fintech.duckdb
+  target: dev
